@@ -1,0 +1,8 @@
+{
+  "name": "eventia",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "test": "pnpm --filter api test"
+  }
+}
