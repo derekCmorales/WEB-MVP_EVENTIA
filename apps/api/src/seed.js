@@ -1,9 +1,15 @@
+import { randomBytes } from 'node:crypto'
+import { leerConfig } from './shared/config.js'
 import { hashPassword } from './shared/password.js'
 
-export const DEMO_PASSWORD = 'demo1234'
+export const DEMO_PASSWORD = leerConfig().demoPassword
+
+function tokenSemilla() {
+  return randomBytes(24).toString('hex')
+}
 
 export function createSeedData() {
-  const passwordHash = hashPassword(DEMO_PASSWORD)
+  const passwordHash = hashPassword(leerConfig().demoPassword)
   return {
     usuarios: [
       {
@@ -11,7 +17,7 @@ export function createSeedData() {
         nombre: 'Ana López',
         correo: 'ana@eventia.dev',
         passwordHash,
-        token: 'token-ana-demo',
+        token: tokenSemilla(),
         creadoEn: '2026-10-01T15:00:00.000Z',
       },
       {
@@ -19,7 +25,7 @@ export function createSeedData() {
         nombre: 'Luis García',
         correo: 'luis@eventia.dev',
         passwordHash,
-        token: 'token-luis-demo',
+        token: tokenSemilla(),
         creadoEn: '2026-10-01T15:05:00.000Z',
       },
     ],

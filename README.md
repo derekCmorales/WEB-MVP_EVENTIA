@@ -106,7 +106,11 @@ pnpm dev
 
 Abre http://localhost:5173. La API queda en http://localhost:3001.
 
-Cuentas de demostración, contraseña `demo1234`:
+Variables opcionales (ver `apps/api/.env.example`): `EVENTIA_DEMO_PASSWORD`, `EVENTIA_CORS_ORIGIN`, `PORT`.
+
+Documentación de controles de seguridad (Fase 3): [docs/fase-3-seguridad.md](docs/fase-3-seguridad.md).
+
+Cuentas de demostración, contraseña `demo1234` (o la definida en `EVENTIA_DEMO_PASSWORD`):
 
 - `ana@eventia.dev`
 - `luis@eventia.dev`

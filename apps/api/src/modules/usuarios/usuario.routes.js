@@ -1,8 +1,11 @@
 import { asyncHandler, ok } from '../../shared/http.js'
+import { rechazarIdentidadAjena } from '../../shared/identidad.js'
 import { exigirSesion } from '../../shared/sesion.js'
 
 export function registrarRutasUsuario(app, { usuarioService, inscripcionService }) {
   const sesion = exigirSesion(usuarioService)
+  const soloPropiaCuenta = [sesion, rechazarIdentidadAjena]
+
   app.post('/api/usuarios', asyncHandler((req, res) => {
     ok(res, usuarioService.registrar(req.body), null, 201)
   }))
@@ -23,12 +26,12 @@ export function registrarRutasUsuario(app, { usuarioService, inscripcionService 
     ok(res, usuarioService.eliminar(req.usuario.id))
   }))
 
-  app.get('/api/usuarios/yo/inscripciones', sesion, asyncHandler((req, res) => {
+  app.get('/api/usuarios/yo/inscripciones', ...soloPropiaCuenta, asyncHandler((req, res) => {
     const data = inscripcionService.listar(req.usuario.id)
     ok(res, data, { total: data.length })
   }))
 
-  app.post('/api/usuarios/yo/inscripciones', sesion, asyncHandler((req, res) => {
+  app.post('/api/usuarios/yo/inscripciones', ...soloPropiaCuenta, asyncHandler((req, res) => {
     ok(res, inscripcionService.inscribir(req.usuario.id, req.body), null, 201)
   }))
 }
