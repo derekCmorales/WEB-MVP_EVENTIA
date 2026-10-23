@@ -1,0 +1,419 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ATTENDEE
+  ORGANIZER
+  STAFF
+  ADMIN
+}
+
+enum MemberRole {
+  OWNER
+  ORGANIZER
+  STAFF
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
+enum RefundPolicy {
+  FLEXIBLE
+  MODERATE
+  STRICT
+}
+
+enum SessionStatus {
+  SCHEDULED
+  ON_SALE
+  CANCELLED
+  COMPLETED
+}
+
+enum ZoneKind {
+  GA
+  SEATED
+}
+
+enum SeatStatus {
+  FREE
+  HELD
+  SOLD
+  BLOCKED
+}
+
+enum HoldStatus {
+  ACTIVE
+  CONVERTED
+  EXPIRED
+  RELEASED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum TicketStatus {
+  ISSUED
+  USED
+  REFUNDED
+  CANCELLED
+}
+
+enum TransferStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  CANCELLED
+}
+
+enum WaitlistStatus {
+  WAITING
+  OFFERED
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
+enum CheckInResult {
+  OK
+  DUPLICATE
+  INVALID
+  REVOKED
+  WRONG_EVENT
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  passwordHash  String
+  role          UserRole  @default(ATTENDEE)
+  failedLogins  Int       @default(0)
+  lockedUntil   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  refreshTokens RefreshToken[]
+  memberships   OrganizationMember[]
+  holds         Hold[]
+  orders        Order[]
+  tickets       Ticket[]
+  waitlist      WaitlistEntry[]
+  auditLogs     AuditLog[]
+  queueEntries  QueueEntry[]
+}
+
+model RefreshToken {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  familyId     String
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?
+  userAgent    String?
+  ip           String?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId, familyId])
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  members   OrganizationMember[]
+  venues    Venue[]
+  events    Event[]
+}
+
+model OrganizationMember {
+  id     String     @id @default(cuid())
+  orgId  String
+  userId String
+  role   MemberRole
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, userId])
+}
+
+model Venue {
+  id      String  @id @default(cuid())
+  orgId   String
+  name    String
+  city    String
+  address String
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  events  Event[]
+}
+
+model Event {
+  id           String       @id @default(cuid())
+  orgId        String
+  venueId      String?
+  title        String
+  slug         String       @unique
+  summary      String
+  description  String
+  city         String
+  coverHue     String       @default("#2F4BFF")
+  status       EventStatus  @default(DRAFT)
+  refundPolicy RefundPolicy @default(MODERATE)
+  createdById  String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  venue        Venue?       @relation(fields: [venueId], references: [id])
+  sessions     Session[]
+
+  @@index([status, city])
+  @@index([orgId])
+}
+
+model Session {
+  id           String        @id @default(cuid())
+  eventId      String
+  startsAt     DateTime
+  endsAt       DateTime
+  status       SessionStatus @default(ON_SALE)
+  salesOpenAt  DateTime
+  salesCloseAt DateTime?
+  queueEnabled Boolean       @default(false)
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  zones        Zone[]
+  ticketTypes  TicketType[]
+  seats        Seat[]
+  holds        Hold[]
+  waitlist     WaitlistEntry[]
+  queue        QueueEntry[]
+
+  @@index([eventId, startsAt])
+}
+
+model Zone {
+  id          String   @id @default(cuid())
+  sessionId   String
+  name        String
+  kind        ZoneKind
+  capacity    Int
+  sold        Int      @default(0)
+  held        Int      @default(0)
+  version     Int      @default(0)
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  seats       Seat[]
+  ticketTypes TicketType[]
+}
+
+model Seat {
+  id         String     @id @default(cuid())
+  zoneId     String
+  sessionId  String
+  row        String
+  number     Int
+  status     SeatStatus @default(FREE)
+  accessible Boolean    @default(false)
+  holdId     String?
+  zone       Zone       @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  session    Session    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, zoneId, row, number])
+  @@index([holdId])
+}
+
+model TicketType {
+  id            String  @id @default(cuid())
+  sessionId     String
+  zoneId        String
+  name          String
+  priceCents    Int
+  feeCents      Int     @default(0)
+  currency      String  @default("USD")
+  perOrderLimit Int     @default(6)
+  perUserLimit  Int     @default(6)
+  session       Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  zone          Zone    @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+}
+
+model Hold {
+  id             String     @id @default(cuid())
+  userId         String
+  sessionId      String
+  status         HoldStatus @default(ACTIVE)
+  expiresAt      DateTime
+  idempotencyKey String
+  requestHash    String
+  createdAt      DateTime   @default(now())
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session        Session    @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  items          HoldItem[]
+  order          Order?
+
+  @@unique([userId, idempotencyKey])
+  @@index([status, expiresAt])
+}
+
+model HoldItem {
+  id           String  @id @default(cuid())
+  holdId       String
+  ticketTypeId String
+  zoneId       String
+  quantity     Int
+  hold         Hold    @relation(fields: [holdId], references: [id], onDelete: Cascade)
+
+  @@index([holdId])
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  userId         String
+  holdId         String      @unique
+  status         OrderStatus @default(PENDING)
+  totalCents     Int
+  currency       String
+  idempotencyKey String
+  requestHash    String
+  pspProvider    String?
+  pspRef         String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  user           User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  hold           Hold        @relation(fields: [holdId], references: [id], onDelete: Restrict)
+  tickets        Ticket[]
+  refunds        Refund[]
+
+  @@unique([userId, idempotencyKey])
+}
+
+model Ticket {
+  id           String       @id @default(cuid())
+  orderId      String
+  holderId     String
+  sessionId    String
+  ticketTypeId String
+  zoneId       String
+  seatId       String?
+  serial       String       @unique
+  kid          String
+  status       TicketStatus @default(ISSUED)
+  rev          Int          @default(1)
+  createdAt    DateTime     @default(now())
+  order        Order        @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  holder       User         @relation(fields: [holderId], references: [id], onDelete: Restrict)
+  checkIns     CheckIn[]
+  transfers    Transfer[]
+
+  @@index([holderId])
+  @@index([sessionId, status])
+}
+
+model Transfer {
+  id        String         @id @default(cuid())
+  ticketId  String
+  fromId    String
+  toEmail   String
+  status    TransferStatus @default(PENDING)
+  expiresAt DateTime
+  createdAt DateTime       @default(now())
+  ticket    Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([toEmail, status])
+}
+
+model Refund {
+  id          String       @id @default(cuid())
+  orderId     String
+  amountCents Int
+  reason      String
+  policy      RefundPolicy
+  createdAt   DateTime     @default(now())
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model WaitlistEntry {
+  id             String         @id @default(cuid())
+  sessionId      String
+  ticketTypeId   String
+  userId         String
+  position       Int
+  status         WaitlistStatus @default(WAITING)
+  offerExpiresAt DateTime?
+  holdId         String?
+  createdAt      DateTime       @default(now())
+  session        Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId, ticketTypeId])
+  @@index([sessionId, status, position])
+}
+
+model CheckIn {
+  id       String        @id @default(cuid())
+  ticketId String
+  deviceId String
+  at       DateTime      @default(now())
+  result   CheckInResult
+  offline  Boolean       @default(false)
+  ticket   Ticket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, result])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  targetType String
+  targetId   String
+  ip         String?
+  at         DateTime @default(now())
+  prevHash   String
+  hash       String
+  metadata   Json?
+  actor      User?    @relation(fields: [actorId], references: [id])
+
+  @@index([at])
+  @@index([targetType, targetId])
+}
+
+model QueueEntry {
+  id                  String    @id @default(cuid())
+  sessionId           String
+  userId              String
+  position            Int
+  deviceId            String?
+  joinedAt            DateTime  @default(now())
+  admittedAt          DateTime?
+  admissionExpiresAt  DateTime?
+  session             Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([sessionId, admittedAt, position])
+}
+
+model OutboxEvent {
+  id          String    @id @default(cuid())
+  type        String
+  payload     Json
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+
+  @@index([publishedAt])
+}
