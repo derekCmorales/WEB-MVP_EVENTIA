@@ -237,6 +237,7 @@ export class CatalogService {
     return {
       data: tickets.map((ticket) => ({
         ticketId: ticket.id,
+        orderId: ticket.orderId,
         serial: ticket.serial,
         status: ticket.status,
         rev: ticket.rev,

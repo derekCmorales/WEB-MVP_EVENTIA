@@ -19,6 +19,23 @@ export class TicketingService {
     private readonly audit: AuditService,
   ) {}
 
+  async incoming(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (!user) throw notFound('Usuario no encontrado')
+    const rows = await this.prisma.transfer.findMany({
+      where: { toEmail: user.email, status: 'PENDING', expiresAt: { gt: new Date() } },
+      include: { ticket: { include: this.include() } },
+      orderBy: { createdAt: 'desc' },
+    })
+    return {
+      data: rows.map((row) => ({
+        id: row.id,
+        expiresAt: row.expiresAt,
+        ticket: presentTicket(row.ticket),
+      })),
+    }
+  }
+
   async mine(userId: string) {
     const tickets = await this.prisma.ticket.findMany({
       where: { holderId: userId },

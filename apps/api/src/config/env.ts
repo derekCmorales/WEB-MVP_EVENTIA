@@ -5,7 +5,7 @@ const schema = z.object({
   PORT: z.coerce.number().default(3001),
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().optional(),
-  WEB_ORIGIN: z.string().default('http://localhost:4321'),
+  WEB_ORIGIN: z.string().default('http://localhost:4321,http://127.0.0.1:4321'),
   EVENTIA_DEMO_PASSWORD: z.string().min(8).default('demo1234'),
   PAYMENTS_MODE: z.enum(['fake', 'stripe', 'auto']).default('auto'),
   STRIPE_SECRET_KEY: z.string().optional(),

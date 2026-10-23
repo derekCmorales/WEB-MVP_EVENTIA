@@ -12,6 +12,11 @@ import { clientIp } from '../common/guards'
 export class TicketingController {
   constructor(private readonly tickets: TicketingService) {}
 
+  @Get('transfers/mine')
+  incoming(@Req() req: Request) {
+    return this.tickets.incoming(req.user!.id)
+  }
+
   @Get('tickets/mine')
   mine(@Req() req: Request) {
     return this.tickets.mine(req.user!.id)
