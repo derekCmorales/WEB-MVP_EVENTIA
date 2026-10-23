@@ -35,5 +35,9 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 <a href="#main" class="sr-only">Saltar al contenido</a>
 <slot />
 <script src="../scripts/main.ts"></script>
+<script>
+  import { boot } from "../lib/api";
+  void boot();
+</script>
 </body>
 </html>

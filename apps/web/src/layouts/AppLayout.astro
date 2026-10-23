@@ -1,0 +1,15 @@
+---
+import Base from "./Base.astro";
+import Header from "../components/Header.astro";
+import "../styles/app.css";
+interface Props { title: string; description: string }
+const { title, description } = Astro.props;
+---
+<Base title={title} description={description}>
+  <Header />
+  <main id="main" class="app-main">
+    <div class="wrap">
+      <slot />
+    </div>
+  </main>
+</Base>

@@ -1,0 +1,81 @@
+import { expect, test } from '@playwright/test'
+import { mkdir } from 'node:fs/promises'
+
+const shots = '/opt/cursor/artifacts/screenshots'
+
+test('compra un pase y la puerta lo valida', async ({ page, browser }) => {
+  test.setTimeout(180_000)
+  await mkdir(shots, { recursive: true })
+  const email = `e2e.${Date.now()}@eventia.dev`
+
+  await page.goto('/')
+  await expect(page.getByRole('link', { name: 'Explorar' }).first()).toBeVisible()
+  await page.screenshot({ path: `${shots}/01-inicio.png`, fullPage: true })
+
+  await page.goto('/entrar')
+  await expect(page.locator('form[data-hydrated="true"]')).toBeVisible()
+  await page.getByRole('button', { name: 'Crear cuenta' }).click()
+  await expect(page.getByLabel('Nombre')).toBeVisible()
+  await page.getByLabel('Nombre').fill('Elena Ruiz')
+  await page.getByLabel('Correo').fill(email)
+  await page.getByLabel('Contraseña').fill('demo1234')
+  await page.locator('form button[type="submit"]').click()
+  await page.waitForURL('**/explorar')
+  await expect(page.getByRole('link', { name: /Taller de fotografía nocturna/ })).toBeVisible()
+  await page.screenshot({ path: `${shots}/02-explorar.png`, fullPage: true })
+
+  await page.getByRole('link', { name: /Taller de fotografía nocturna/ }).click()
+  await expect(page.getByRole('heading', { name: 'Taller de fotografía nocturna' })).toBeVisible()
+  await page.screenshot({ path: `${shots}/03-evento.png`, fullPage: true })
+
+  await page.getByRole('button', { name: 'Apartar lugar' }).click()
+  await page.waitForURL('**/checkout/**')
+  await expect(page.getByText(/El apartado vence/)).toBeVisible()
+  await page.screenshot({ path: `${shots}/04-checkout.png`, fullPage: true })
+
+  await page.getByRole('button', { name: 'Pagar' }).click()
+  await expect(page.getByText('Listo. Tu pase ya está en la cartera.')).toBeVisible()
+  await page.getByRole('link', { name: 'Ver mis boletos' }).click()
+  await expect(page.getByRole('link', { name: /Taller de fotografía nocturna/ })).toBeVisible()
+  await page.screenshot({ path: `${shots}/05-boletos.png`, fullPage: true })
+
+  await page.getByRole('link', { name: /Taller de fotografía nocturna/ }).click()
+  const token = page.getByLabel('Contenido del pase')
+  await expect(token).not.toHaveValue('')
+  await page.screenshot({ path: `${shots}/06-pase.png`, fullPage: true })
+  const value = await token.inputValue()
+
+  const staff = await browser.newContext()
+  const door = await staff.newPage()
+  await door.goto('/entrar')
+  await expect(door.locator('form[data-hydrated="true"]')).toBeVisible()
+  await door.getByLabel('Correo').fill('staff@eventia.dev')
+  await door.getByLabel('Contraseña').fill('demo1234')
+  await door.locator('form button[type="submit"]').click()
+  await expect(door).toHaveURL(/\/explorar/, { timeout: 20_000 })
+  await door.goto('/scanner')
+  await expect(door.getByRole('heading', { name: 'Validar pases.' })).toBeVisible()
+  await door.getByLabel('Función').selectOption({ label: 'Taller de fotografía nocturna' })
+  await door.getByLabel('Contenido del pase').fill(value)
+  await door.screenshot({ path: `${shots}/07-scanner.png`, fullPage: true })
+  await door.getByRole('button', { name: 'Validar' }).click()
+  await expect(door.getByText('Acceso permitido')).toBeVisible()
+  await door.screenshot({ path: `${shots}/08-acceso.png`, fullPage: true })
+  await door.getByRole('button', { name: 'Validar' }).click()
+  await expect(door.getByText('Este boleto ya entró')).toBeVisible()
+  await staff.close()
+
+  const organizer = await browser.newContext()
+  const desk = await organizer.newPage()
+  await desk.goto('/entrar')
+  await expect(desk.locator('form[data-hydrated="true"]')).toBeVisible()
+  await desk.getByLabel('Correo').fill('ana@eventia.dev')
+  await desk.getByLabel('Contraseña').fill('demo1234')
+  await desk.locator('form button[type="submit"]').click()
+  await expect(desk).toHaveURL(/\/explorar/, { timeout: 20_000 })
+  await desk.goto('/organizador')
+  await expect(desk.getByRole('heading', { name: 'Tu cartelera.' })).toBeVisible()
+  await expect(desk.getByText('Taller de fotografía nocturna').first()).toBeVisible()
+  await desk.screenshot({ path: `${shots}/09-organizador.png`, fullPage: true })
+  await organizer.close()
+})
