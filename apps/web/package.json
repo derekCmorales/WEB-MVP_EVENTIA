@@ -1,18 +1,2 @@
-{
-  "name": "web",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.2.0"
-  }
-}
+{"name":"web","private":true,"type":"module","scripts":{"dev":"astro dev","build":"astro build","preview":"astro preview --port 4321"},
+"dependencies":{"astro":"^5","@tailwindcss/vite":"^4","tailwindcss":"^4","@fontsource/inter":"^5","@fontsource/inter-tight":"^5","@fontsource/jetbrains-mono":"^5","@eventia/tokens":"workspace:*","sharp":"^0.33"}}
