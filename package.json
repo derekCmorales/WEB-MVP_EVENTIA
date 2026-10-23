@@ -7,8 +7,9 @@
   },
   "scripts": {
     "dev": "pnpm -r --parallel dev",
-    "build": "pnpm --filter web build",
+    "build": "pnpm --filter @eventia/qr build && pnpm --filter @eventia/schemas build && pnpm --filter api build && pnpm --filter web build",
     "test": "pnpm --filter api test",
+    "test:e2e": "pnpm --filter web exec playwright test",
     "preview": "pnpm --filter web preview"
   }
 }

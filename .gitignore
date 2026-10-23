@@ -10,4 +10,5 @@ coverage
 playwright-report
 test-results
 blob-report
+dump.rdb
 

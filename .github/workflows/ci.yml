@@ -1,0 +1,68 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: eventia
+          POSTGRES_PASSWORD: eventia
+          POSTGRES_DB: eventia
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U eventia -d eventia"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @eventia/qr build
+      - run: pnpm --filter @eventia/schemas build
+      - run: pnpm --filter api test:unit
+      - name: integration with testcontainers
+        run: pnpm --filter api test:integration
+      - run: pnpm --filter web build
+      - name: seed and end-to-end
+        env:
+          DATABASE_URL: postgresql://eventia:eventia@localhost:5432/eventia
+          REDIS_URL: redis://127.0.0.1:6379
+          WEB_ORIGIN: http://127.0.0.1:4321,http://localhost:4321
+          EVENTIA_DEMO_PASSWORD: demo1234
+          PAYMENTS_MODE: fake
+          PORT: "3001"
+        run: |
+          pnpm --filter api exec prisma migrate deploy
+          pnpm --filter api build
+          pnpm --filter api db:seed
+          pnpm --filter api start &
+          for i in $(seq 1 40); do
+            curl -sf http://127.0.0.1:3001/v1/health && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:3001/v1/health
+          pnpm --filter web exec playwright install --with-deps chromium
+          pnpm --filter web exec playwright test
