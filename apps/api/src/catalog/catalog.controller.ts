@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { createEventSchema, inviteStaffSchema, listEventsQuerySchema, patchEventSchema } from '@eventia/schemas'
 import type { Request } from 'express'
 import { CatalogService } from './catalog.service'
+import { AdminService } from '../admin/admin.service'
 import { ZodPipe } from '../common/zod.pipe'
 import { Public } from '../common/decorators'
 import { RateLimitService } from '../infra/rate-limit.service'
@@ -15,6 +16,7 @@ export class CatalogController {
   constructor(
     private readonly catalog: CatalogService,
     private readonly limits: RateLimitService,
+    private readonly admin: AdminService,
   ) {}
 
   @Public()
@@ -35,6 +37,11 @@ export class CatalogController {
   @Get('organizer/overview')
   overview(@Req() req: Request) {
     return this.catalog.overview(req.user!.id)
+  }
+
+  @Get('organizer/insights')
+  insights(@Req() req: Request) {
+    return this.admin.organizerInsights(req.user!.id)
   }
 
   @ApiBearerAuth()

@@ -36,6 +36,7 @@ export class AuthGuard implements CanActivate {
         if (payload.purpose === 'admit') throw unauthorized('Ese token no abre la API')
         const user = await this.prisma.user.findUnique({ where: { id: payload.sub } })
         if (!user) throw unauthorized()
+        if (user.suspendedAt) throw forbidden('Esta cuenta está suspendida', 'bfla')
         request.user = { id: user.id, email: user.email, role: user.role, name: user.name }
       } catch (error) {
         if (!isPublic) throw error instanceof Error && 'getStatus' in error ? error : unauthorized('La sesión no es válida')

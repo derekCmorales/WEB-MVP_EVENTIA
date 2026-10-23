@@ -23,6 +23,8 @@ import { CheckInController } from './checkin/checkin.controller'
 import { QueueService } from './queue/queue.service'
 import { QueueController } from './queue/queue.controller'
 import { HealthController } from './health.controller'
+import { AdminService } from './admin/admin.service'
+import { AdminController } from './admin/admin.controller'
 import { AppThrottlerGuard, AuthGuard, CsrfGuard } from './common/guards'
 
 const limit = process.env.RATE_LIMIT_DISABLED === '1' ? 100_000 : 120
@@ -38,6 +40,7 @@ const limit = process.env.RATE_LIMIT_DISABLED === '1' ? 100_000 : 120
     TicketingController,
     CheckInController,
     QueueController,
+    AdminController,
   ],
   providers: [
     PrismaService,
@@ -53,6 +56,7 @@ const limit = process.env.RATE_LIMIT_DISABLED === '1' ? 100_000 : 120
     TicketingService,
     CheckInService,
     QueueService,
+    AdminService,
     MaintenanceService,
     { provide: APP_GUARD, useClass: AppThrottlerGuard },
     { provide: APP_GUARD, useClass: AuthGuard },

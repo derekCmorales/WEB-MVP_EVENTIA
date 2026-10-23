@@ -127,3 +127,21 @@ export type WaitlistInput = z.infer<typeof waitlistSchema>
 export type InviteStaffInput = z.infer<typeof inviteStaffSchema>
 export type QueueJoinInput = z.infer<typeof queueJoinSchema>
 export type ListEventsQuery = z.infer<typeof listEventsQuerySchema>
+
+export const adminUserPatchSchema = z.object({
+  role: z.enum(['ATTENDEE', 'ORGANIZER', 'STAFF', 'ADMIN']).optional(),
+  suspended: z.boolean().optional(),
+}).refine((value) => value.role !== undefined || value.suspended !== undefined, 'No hay datos para actualizar')
+
+export const adminOrgPatchSchema = z.object({
+  status: z.enum(['PENDING', 'ACTIVE', 'SUSPENDED']).optional(),
+  verified: z.boolean().optional(),
+}).refine((value) => value.status !== undefined || value.verified !== undefined, 'No hay datos para actualizar')
+
+export const adminEventPatchSchema = z.object({
+  status: z.enum(['DRAFT', 'PUBLISHED', 'CANCELLED']),
+})
+
+export type AdminUserPatch = z.infer<typeof adminUserPatchSchema>
+export type AdminOrgPatch = z.infer<typeof adminOrgPatchSchema>
+export type AdminEventPatch = z.infer<typeof adminEventPatchSchema>

@@ -25,6 +25,8 @@ async function main() {
       { id: 'usr_luis', email: 'luis@eventia.dev', name: 'Luis García', passwordHash, role: 'ORGANIZER' },
       { id: 'usr_staff', email: 'staff@eventia.dev', name: 'Sofía Ramos', passwordHash, role: 'STAFF' },
       { id: 'usr_maya', email: 'maya@eventia.dev', name: 'Maya Chen', passwordHash, role: 'ATTENDEE' },
+      { id: 'usr_admin', email: 'admin@eventia.dev', name: 'Diego Admin', passwordHash, role: 'ADMIN' },
+      { id: 'usr_nora', email: 'nora@eventia.dev', name: 'Nora Díaz', passwordHash, role: 'ORGANIZER' },
     ],
   })
 
@@ -32,14 +34,19 @@ async function main() {
     data: [
       { id: 'org_ana', name: 'Estudio Ana', slug: 'estudio-ana' },
       { id: 'org_luis', name: 'Barrio de Luis', slug: 'barrio-de-luis' },
+      { id: 'org_nora', name: 'Sala Nora', slug: 'sala-nora', status: 'PENDING' },
     ],
   })
+  await prisma.organization.update({ where: { id: 'org_ana' }, data: { verifiedAt: new Date('2026-01-15T00:00:00.000Z') } })
+  await prisma.organization.update({ where: { id: 'org_luis' }, data: { verifiedAt: new Date('2026-02-02T00:00:00.000Z') } })
   await prisma.organizationMember.createMany({
     data: [
       { orgId: 'org_ana', userId: 'usr_ana', role: 'OWNER' },
+      { orgId: 'org_ana', userId: 'usr_admin', role: 'OWNER' },
       { orgId: 'org_luis', userId: 'usr_luis', role: 'OWNER' },
       { orgId: 'org_ana', userId: 'usr_staff', role: 'STAFF' },
       { orgId: 'org_luis', userId: 'usr_staff', role: 'STAFF' },
+      { orgId: 'org_nora', userId: 'usr_nora', role: 'OWNER' },
     ],
   })
 

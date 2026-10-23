@@ -43,5 +43,6 @@ Los tres controles de la primera versión siguen vigentes. Las pruebas ya no viv
 | Contraseña | Argon2id. Mínimo 8 caracteres en el esquema compartido |
 | CSRF y origen | Mutaciones exigen cookie y encabezado, y el origen tiene que estar en `WEB_ORIGIN` |
 | Bitácora | El hash encadena el registro anterior y no depende del orden de las claves |
+| Administración (BFLA) | `GET /v1/admin/insights` sin rol ADMIN responde 403. Una cuenta suspendida no entra ni renueva la sesión |
 
 La puerta sin conexión verifica la firma en el navegador con la clave pública del manifiesto y concilia después. No guarda la clave privada.

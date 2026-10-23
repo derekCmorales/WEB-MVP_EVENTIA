@@ -24,6 +24,7 @@ export class CatalogService {
   async list(query: ListEventsQuery) {
     const where: Prisma.EventWhereInput = {
       status: 'PUBLISHED',
+      org: { status: 'ACTIVE' },
       ...(query.city ? { city: { equals: query.city, mode: 'insensitive' } } : {}),
       ...(query.q
         ? {
@@ -60,7 +61,7 @@ export class CatalogService {
 
   async getPublic(idOrSlug: string) {
     const event = await this.prisma.event.findFirst({
-      where: { status: 'PUBLISHED', OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
+      where: { status: 'PUBLISHED', org: { status: 'ACTIVE' }, OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
       include: eventInclude,
     })
     if (!event) throw notFound('Evento no encontrado')

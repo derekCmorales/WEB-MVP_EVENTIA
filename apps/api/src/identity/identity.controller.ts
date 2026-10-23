@@ -50,6 +50,12 @@ export class IdentityController {
   }
 
   @Public()
+  @Get('session')
+  session(@Req() req: Request) {
+    return this.identity.peek(req.cookies?.[REFRESH])
+  }
+
+  @Public()
   @Post('refresh')
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const session = await this.identity.refresh(req.cookies?.[REFRESH], clientIp(req), req.header('user-agent') ?? null)

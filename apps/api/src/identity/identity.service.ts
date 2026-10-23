@@ -57,6 +57,7 @@ export class IdentityService implements OnModuleInit {
     const valid = user
       ? await argon2.verify(user.passwordHash, password)
       : await argon2.verify(this.dummyHash, password).then(() => false).catch(() => false)
+    if (user && valid && user.suspendedAt) throw forbidden('Esta cuenta está suspendida', 'bfla')
     if (!user || !valid) {
       if (user) {
         const failedLogins = user.failedLogins + 1
@@ -73,6 +74,13 @@ export class IdentityService implements OnModuleInit {
     await this.prisma.user.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null } })
     await this.audit.record({ actorId: user.id, action: 'login', targetType: 'user', targetId: user.id, ip })
     return this.startSession(user, ip, userAgent)
+  }
+
+  async peek(rawToken: string | undefined) {
+    if (!rawToken) return { user: null }
+    const current = await this.prisma.refreshToken.findUnique({ where: { tokenHash: sha256(rawToken) }, include: { user: true } })
+    if (!current || current.revokedAt || current.expiresAt < new Date() || current.user.suspendedAt) return { user: null }
+    return { user: publicUser(current.user) }
   }
 
   async refresh(rawToken: string | undefined, ip: string, userAgent: string | null) {
@@ -95,6 +103,7 @@ export class IdentityService implements OnModuleInit {
       throw unauthorized('Sesión revocada por reutilización del refresh')
     }
     if (current.expiresAt < new Date()) throw unauthorized('La sesión expiró')
+    if (current.user.suspendedAt) throw forbidden('Esta cuenta está suspendida', 'bfla')
     const next = await this.issueRefresh(current.userId, current.familyId, ip, userAgent)
     await this.prisma.refreshToken.update({
       where: { id: current.id },

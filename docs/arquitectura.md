@@ -36,7 +36,7 @@ Si la venta aún no abre, cada cuenta recibe una posición al azar. Cuando abre,
 
 ## Datos
 
-Organización, sede, evento, función, zona, asiento, tipo de boleto, apartado, orden, boleto, transferencia, reembolso, lista de espera, check-in, bitácora encadenada por hash y entrada de fila. El esquema y las políticas RLS de lectura y escritura por `app.org_id` están en la migración inicial. El rol de desarrollo es superusuario, así que RLS no se aplica hasta usar un rol que no sea dueño. No está forzado: forzarlo sin `set_config` tumbaría la API.
+Organización (pendiente, activa o suspendida), sede, evento, función, zona, asiento, tipo de boleto, apartado, orden, boleto, transferencia, reembolso, lista de espera, check-in, bitácora encadenada por hash y entrada de fila. El rol ADMIN opera el panel de plataforma. Una cuenta puede quedar suspendida. El esquema y las políticas RLS de lectura y escritura por `app.org_id` están en la migración inicial. El rol de desarrollo es superusuario, así que RLS no se aplica hasta usar un rol que no sea dueño. No está forzado: forzarlo sin `set_config` tumbaría la API.
 
 La moneda de cobro es USD. Stripe no cobra en GTQ; el precio se muestra en dólares a propósito.
 

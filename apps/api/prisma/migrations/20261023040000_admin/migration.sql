@@ -1,0 +1,5 @@
+CREATE TYPE "OrgStatus" AS ENUM ('PENDING', 'ACTIVE', 'SUSPENDED');
+
+ALTER TABLE "Organization" ADD COLUMN "status" "OrgStatus" NOT NULL DEFAULT 'ACTIVE';
+ALTER TABLE "Organization" ADD COLUMN "verifiedAt" TIMESTAMP(3);
+ALTER TABLE "User" ADD COLUMN "suspendedAt" TIMESTAMP(3);
