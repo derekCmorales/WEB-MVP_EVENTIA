@@ -1,0 +1,7 @@
+---
+import AppLayout from "../../layouts/AppLayout.astro";
+import WalletIsland from "../../components/app/WalletIsland.tsx";
+---
+<AppLayout title="Mis boletos · Eventia" description="Tu cartera de pases." crumbs={[{ label: "Mis boletos" }]}>
+  <WalletIsland client:load />
+</AppLayout>

@@ -1,128 +1,66 @@
-# EventIA
+# Eventia
 
-Primera versión de una plataforma para publicar eventos, descubrirlos e inscribirse con control de cupo.
+Plataforma para publicar eventos con cupo real, apartar un lugar, pagar y entrar con un pase QR que rota solo.
 
-## 1. Definición del MVP
+La interfaz está en español. El código, en inglés.
 
-### Incluimos en el MVP
+## Qué incluye
 
-- Registro de usuarios, con inicio de sesión mínimo para saber quién publica y quién se inscribe
-- Publicación de eventos
-- Consulta y búsqueda de eventos
-- Inscripción a eventos
-- Control de cupos
-- Consulta de las inscripciones realizadas
-- Modificación y eliminación básicas, porque forman parte de las responsabilidades de cada módulo y evitan datos que no se pueden corregir
+- Landing y app en Astro 5, con islas de React solo donde hay estado (explorar, evento, pago, cartera, organizador, puerta, fila y cuenta).
+- API NestJS en `/v1`: identidad, catálogo, apartados, órdenes, boletos, fila, puerta y bitácora.
+- Postgres (Prisma) y Redis. Sin Redis la API sigue en pie: el límite de peticiones y el barrido de apartados usan memoria.
+- Pagos en modo prueba. Con llaves `sk_test_` de Stripe se crea un PaymentIntent y el webhook firma la emisión. Sin llaves, el cobro falso emite el boleto al instante.
 
-Cada una quedó en su versión mínima: formularios cortos, búsqueda por texto y un cupo numérico. No hay perfiles avanzados, pagos ni recomendaciones.
+## Arranque local
 
-### Dejamos para después
-
-- Notificación de confirmación
-
-La notificación no decide si la plataforma sirve. La persona ya ve en pantalla que la inscripción quedó hecha y puede consultarla después. Un correo o un push añade un servicio externo, credenciales y fallos de entrega que el equipo todavía no necesita para validar el uso.
-
-### Justificación
-
-El valor de esta versión es un ciclo completo: alguien publica una actividad, otra persona la encuentra, aparta un lugar y el cupo deja de ofrecer ese lugar. Si falta cualquiera de esos pasos, el producto no se puede probar con usuarios reales. La confirmación en pantalla cubre el cierre del ciclo mientras se aprende si la gente vuelve.
-
-## 2. Arquitectura
-
-### Arquitectura seleccionada
-
-Monolito modular.
-
-El equipo es pequeño y la meta es validar uso, no sostener millones de personas. Un solo proceso Express se despliega y se entiende fácil. Los módulos tienen fronteras claras para poder separarlos más adelante si el producto crece. Microservicios, colas y bases distribuidas sobran en esta etapa.
-
-### Módulos
-
-**Usuarios**
-
-- Crear, modificar y eliminar usuarios
-- Iniciar sesión
-- Inscribir a un evento
-- Consultar las inscripciones propias
-
-**Eventos**
-
-- Crear, modificar y eliminar eventos
-- Consultar y buscar
-- Calcular el cupo disponible
-
-La inscripción vive en Usuarios porque es una acción de la persona. El cálculo del cupo vive en Eventos porque el cupo es un dato del evento. Ninguno importa el código del otro: `src/composition.js` les inyecta funciones pequeñas.
-
-### Relaciones
-
-- Un usuario puede publicar varios eventos.
-- Un usuario puede inscribirse a varios eventos.
-- Un evento tiene un organizador y muchas inscripciones, sin repetir a la misma persona.
-
-### Almacenamiento
-
-Un archivo JSON local (`apps/api/data/db.json`) con tres colecciones:
-
-- `usuarios`
-- `eventos`
-- `inscripciones`
-
-Hace falta guardar las tres. Con solo usuarios no se pueden buscar actividades ni restar lugares. Los repositorios esconden el archivo, así que más adelante se puede cambiar por una base de datos sin reescribir las reglas.
-
-### Comunicaciones
-
-- El navegador React habla con Express por HTTP y JSON en `/api`.
-- Entre módulos la comunicación es una llamada de función en el mismo proceso.
-- No hay correo, cola ni red interna. La confirmación de la inscripción es la respuesta HTTP y la pantalla.
-
-```mermaid
-flowchart LR
-  web["React"] -->|HTTP JSON| api["Express"]
-  api --> usuarios["Módulo Usuarios"]
-  api --> eventos["Módulo Eventos"]
-  usuarios -->|"¿existe y hay cupo?"| eventos
-  usuarios --> datos["JSON: usuarios, eventos, inscripciones"]
-  eventos --> datos
-```
-
-## 3. Dependencias
-
-| Componente | Se relaciona con | ¿Qué necesita? |
-| --- | --- | --- |
-| Usuarios, al inscribir | Eventos | Que el evento exista, que haya cupo disponible y que esa persona no esté ya inscrita |
-| Eventos, al publicar o editar | Usuarios | Que el organizador exista y sea quien inició sesión |
-| Usuarios, al consultar inscripciones | Eventos | Título, fecha, lugar y cupo restante de cada evento |
-| Eventos, al calcular cupo | Inscripciones | Cuántas inscripciones activas tiene ese evento, por el puerto `contarInscripciones` |
-
-Eventos no administra las inscripciones. Solo pregunta cuántas hay y aplica `cupo - inscritos`. Así la responsabilidad queda en un solo lugar y no se forma un ciclo de imports.
-
-## Cómo correrlo
-
-Requiere Node 18 o superior y pnpm.
+Hace falta Node 22 y pnpm 10.33.4.
 
 ```bash
+docker compose up -d
+cp apps/api/.env.example apps/api/.env
 pnpm install
-pnpm test
-pnpm dev
+pnpm --filter @eventia/qr build
+pnpm --filter @eventia/schemas build
+pnpm --filter api exec prisma migrate deploy
+pnpm --filter api db:seed
+pnpm --filter api dev
+pnpm --filter web dev
 ```
 
-Abre http://localhost:5173. La API queda en http://localhost:3001.
+La web queda en http://127.0.0.1:4321 y reenvía `/v1` a la API en el puerto 3001. Las cookies de sesión son del mismo sitio. En producción el mismo reenvío lo hace el servidor de Astro (`API_PROXY`) o un proxy inverso. El webhook de Stripe debe llegar directo a la API.
 
-Variables opcionales (ver `apps/api/.env.example`): `EVENTIA_DEMO_PASSWORD`, `EVENTIA_CORS_ORIGIN`, `PORT`.
+Cuentas de la semilla, contraseña `demo1234` (o `EVENTIA_DEMO_PASSWORD`):
 
-Documentación de controles de seguridad (Fase 3): [docs/fase-3-seguridad.md](docs/fase-3-seguridad.md).
+| Correo | Para qué |
+| --- | --- |
+| ana@eventia.dev | Organizadora del taller |
+| luis@eventia.dev | Organizador del cine y la ruta |
+| staff@eventia.dev | Puerta de ambas organizaciones |
+| maya@eventia.dev | Ya tiene el pase del cine |
+| admin@eventia.dev | Administración de la plataforma |
+| nora@eventia.dev | Organizadora pendiente de aprobación |
 
-Cuentas de demostración, contraseña `demo1234` (o la definida en `EVENTIA_DEMO_PASSWORD`):
+`docker compose --profile app up --build` levanta también la API y la web. En ese perfil hay que definir las llaves Ed25519 si `NODE_ENV=production`.
 
-- `ana@eventia.dev`
-- `luis@eventia.dev`
+## Pruebas
 
-Flujo para comprobar el cupo: entra como Ana, abre **Cine al aire libre** (queda 1 lugar), inscríbete y confirma que el cupo pasa a agotado. En **Mis inscripciones** aparece ese evento.
-
-## Dónde se ve la arquitectura en el código
-
-```text
-apps/api/src/modules/usuarios   registro, sesión, inscripción
-apps/api/src/modules/eventos    publicación, búsqueda, cálculo de cupo
-apps/api/src/composition.js     conexiones entre módulos
-apps/api/src/shared/store.js    almacenamiento
-apps/web                        interfaz React
+```bash
+pnpm --filter api test:unit
+USE_EXTERNAL_DB=1 DATABASE_URL=postgresql://eventia:eventia@localhost:5432/eventia_test pnpm --filter api test:integration
+pnpm --filter web exec playwright test
 ```
+
+Sin `USE_EXTERNAL_DB`, la integración levanta Postgres 16 y Redis 7 con Testcontainers. La prueba de concurrencia aparta 25 veces un cupo de 5 y comprueba que solo entran 5 boletos.
+
+El script `load/oversell.k6.js` es una sonda opcional. La prueba que cierra el cupo es la de Vitest.
+
+## Diseño
+
+La landing que ya estaba aprobada sigue siendo la base visual: neutros cálidos, un solo acento cobalto `#2F4BFF`, Inter Tight, Inter y JetBrains Mono. Los tokens viven en `packages/tokens`.
+
+## Documentos
+
+- [Arquitectura](docs/arquitectura.md)
+- [Controles de seguridad](docs/fase-3-seguridad.md)
+- [Qué quedó y qué se dejó](docs/alcance.md)
+- OpenAPI en `/docs` cuando la API no está en producción

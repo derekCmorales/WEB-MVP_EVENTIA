@@ -1,0 +1,9 @@
+:root{
+  --color-bg:#FAFAF9;--color-paper:#FFFFFF;--color-line:#E7E5E4;--color-line-strong:#D6D3D1;
+  --color-muted:#78716C;--color-ink-2:#57534E;--color-ink:#1C1917;
+  --color-accent:#2F4BFF;--color-accent-soft:#EEF1FF;--color-glow:#FFB27A;--color-danger:#B42318;
+  --font-display:"Inter Tight",Inter,system-ui,sans-serif;--font-body:Inter,system-ui,sans-serif;--font-mono:"JetBrains Mono",ui-monospace,monospace;
+  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;--radius-xl:24px;--radius-pill:999px;
+  --dur-instant:120ms;--dur-fast:200ms;--dur-base:360ms;--dur-slow:700ms;
+  --ease:cubic-bezier(.22,1,.36,1);--ease-in-out:cubic-bezier(.65,0,.35,1);
+}

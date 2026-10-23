@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: eventia
+      POSTGRES_PASSWORD: eventia
+      POSTGRES_DB: eventia
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eventia -d eventia"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  api:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://eventia:eventia@postgres:5432/eventia
+      REDIS_URL: redis://redis:6379
+      WEB_ORIGIN: http://localhost:4321,http://127.0.0.1:4321
+      PAYMENTS_MODE: ${PAYMENTS_MODE:-fake}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      TICKET_PRIVATE_KEY: ${TICKET_PRIVATE_KEY:-}
+      TICKET_PUBLIC_KEY: ${TICKET_PUBLIC_KEY:-}
+      PORT: 3001
+      NODE_ENV: ${NODE_ENV:-development}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  web:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      API_PROXY: http://api:3001
+    ports:
+      - "4321:4321"
+    depends_on:
+      - api

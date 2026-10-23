@@ -1,0 +1,7 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+import ExploreIsland from "../components/app/ExploreIsland.tsx";
+---
+<AppLayout title="Explorar · Eventia" description="Eventos con cupo real cerca de ti." crumbs={[{ href: "/explorar", label: "Explorar" }]}>
+  <ExploreIsland client:load />
+</AppLayout>

@@ -1,0 +1,32 @@
+---
+import Base from "./Base.astro";
+import Header from "../components/Header.astro";
+import "../styles/app.css";
+import "@eventia/ui/ui.css";
+import ToastHost from "../components/app/ToastHost.tsx";
+import CommandPalette from "../components/app/CommandPalette.tsx";
+interface Crumb { href?: string; label: string }
+interface Props { title: string; description: string; crumbs?: Crumb[] }
+const { title, description, crumbs = [] } = Astro.props;
+---
+<Base title={title} description={description}>
+  <Header />
+  <main id="main" class="app-main">
+    <div class="wrap">
+      {crumbs.length > 0 && (
+        <nav class="ui-crumbs" aria-label="Migas">
+          <a href="/">Inicio</a>
+          {crumbs.map((crumb) => (
+            <span>
+              <span aria-hidden="true">/</span>
+              {crumb.href ? <a href={crumb.href}>{crumb.label}</a> : <span>{crumb.label}</span>}
+            </span>
+          ))}
+        </nav>
+      )}
+      <slot />
+    </div>
+  </main>
+  <ToastHost client:load />
+  <CommandPalette client:load />
+</Base>

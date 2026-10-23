@@ -1,0 +1,7 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+import AuthIsland from "../components/app/AuthIsland.tsx";
+---
+<AppLayout title="Entrar · Eventia" description="Entra o crea tu cuenta.">
+  <AuthIsland client:load mode="login" />
+</AppLayout>

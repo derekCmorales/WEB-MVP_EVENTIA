@@ -1,7 +1,14 @@
 node_modules
 dist
+.astro
 apps/api/data
 .env
 .env.local
 .DS_Store
 *.log
+coverage
+playwright-report
+test-results
+blob-report
+dump.rdb
+

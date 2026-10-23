@@ -1,0 +1,7 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+import ScannerIsland from "../components/app/ScannerIsland.tsx";
+---
+<AppLayout title="Puerta · Eventia" description="Valida pases, también sin conexión." crumbs={[{ label: "Puerta" }]}>
+  <ScannerIsland client:load />
+</AppLayout>

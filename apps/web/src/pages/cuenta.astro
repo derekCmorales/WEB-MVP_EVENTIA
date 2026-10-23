@@ -1,0 +1,7 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+import AccountIsland from "../components/app/AccountIsland.tsx";
+---
+<AppLayout title="Cuenta · Eventia" description="Tu perfil, sesiones y datos." crumbs={[{ label: "Cuenta" }]}>
+  <AccountIsland client:load />
+</AppLayout>
