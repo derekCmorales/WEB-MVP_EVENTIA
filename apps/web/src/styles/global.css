@@ -40,9 +40,9 @@ h1,h2,h3{font-family:'Inter Tight',Inter,sans-serif;font-weight:600;letter-spaci
 
 
 .grain{position:absolute;inset:0;pointer-events:none;opacity:.22;mix-blend-mode:multiply;background-image:url("/grain-2.svg")}
-.duo{position:relative;overflow:hidden;background:#1C1917}.duo img{width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(1.15) brightness(1.05);mix-blend-mode:luminosity;opacity:.9}
+.duo{position:relative;overflow:hidden;background:#1C1917}.duo picture{position:absolute;inset:0;display:block;width:100%;height:100%}.duo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(1.15) brightness(1.05);mix-blend-mode:luminosity;opacity:.9}
 .duo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(47,75,255,.0),rgba(47,75,255,.35));mix-blend-mode:screen}
-.duo.light{background:#EEF1FF}.duo.light img{mix-blend-mode:multiply;opacity:.85}
+.duo.light{background:#EEF1FF}.duo.light img{mix-blend-mode:normal;filter:none;opacity:1}.duo.light::after{background:linear-gradient(180deg,transparent 50%,rgba(28,25,23,.45));mix-blend-mode:normal}
 .marq{overflow:hidden;border-block:1px solid var(--line);background:var(--paper);white-space:nowrap}.marq div{display:inline-flex;gap:40px;padding:26px 0;animation:mq 30s linear infinite;font-family:'Inter Tight';font-weight:600;font-size:56px;letter-spacing:-.03em}
 .marq .st{color:#2F4BFF;font-size:28px;align-self:center}.marq span:nth-child(4n+3){color:transparent;-webkit-text-stroke:1px #1C1917}
 @keyframes mq{to{transform:translateX(-50%)}}
