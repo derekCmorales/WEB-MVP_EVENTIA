@@ -24,11 +24,10 @@ async function runBoot() {
     await ensureCsrf()
     const peek = await fetch('/v1/auth/session', { credentials: 'include' })
     const body = peek.ok ? await peek.json() : { user: null }
-    if (body.user) await refresh()
-    else {
-      state().access = null
-      state().user = null
-    }
+    // Peek only. Rotating here races with login and with the next navigation:
+    // the server revokes the token before the browser stores the replacement.
+    state().user = body.user ?? null
+    if (!body.user) state().access = null
   } catch {
     state().access = null
     state().user = null
@@ -45,7 +44,17 @@ async function ensureCsrf() {
   return current.csrf
 }
 
-export async function refresh() {
+export function refresh() {
+  const w = window as BootWindow & { __eventiaRefresh?: Promise<boolean> }
+  if (!w.__eventiaRefresh) {
+    w.__eventiaRefresh = rotate().finally(() => {
+      w.__eventiaRefresh = undefined
+    })
+  }
+  return w.__eventiaRefresh
+}
+
+async function rotate() {
   const csrf = await ensureCsrf()
   const response = await fetch('/v1/auth/refresh', {
     method: 'POST',
@@ -55,6 +64,7 @@ export async function refresh() {
   if (!response.ok) {
     state().access = null
     state().user = null
+    paintAccount()
     return false
   }
   const body = await response.json()
