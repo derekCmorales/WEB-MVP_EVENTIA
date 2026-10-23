@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { EmptyState, Skeleton } from '@eventia/ui'
 import { api, money, when } from '../../lib/api'
 
 type EventCard = {
@@ -17,6 +18,7 @@ export default function ExploreIsland() {
   const [city, setCity] = useState('')
   const [events, setEvents] = useState<EventCard[]>([])
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -29,9 +31,11 @@ export default function ExploreIsland() {
     if (q) params.set('q', q)
     if (city) params.set('city', city)
     const handle = setTimeout(() => {
+      setLoading(true)
       api<{ data: EventCard[] }>(`/v1/events?${params.toString()}`)
         .then((body) => { setEvents(body.data); setError('') })
         .catch((reason: Error) => setError(reason.message))
+        .finally(() => setLoading(false))
     }, 180)
     return () => clearTimeout(handle)
   }, [q, city])
@@ -60,6 +64,7 @@ export default function ExploreIsland() {
         ))}
       </div>
       {error && <p className="err">{error}</p>}
+      {loading && <div className="grid-cards">{[0, 1, 2].map((item) => <Skeleton key={item} height={280} />)}</div>}
       <div className="grid-cards">
         {events.map((event) => {
           const session = event.sessions[0]
@@ -90,7 +95,7 @@ export default function ExploreIsland() {
           )
         })}
       </div>
-      {events.length === 0 && !error && <p className="help">No hay eventos con ese filtro.</p>}
+      {!loading && events.length === 0 && !error && <EmptyState title="Nada por aquí" body="Prueba otra ciudad o limpia la búsqueda." />}
     </div>
   )
 }

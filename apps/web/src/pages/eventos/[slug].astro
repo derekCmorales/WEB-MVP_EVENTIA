@@ -5,6 +5,6 @@ import EventIsland from "../../components/app/EventIsland.tsx";
 const { slug } = Astro.params;
 if (!slug) return Astro.redirect("/explorar");
 ---
-<AppLayout title="Evento · Eventia" description="Detalle, cupo y precio final.">
+<AppLayout title="Evento · Eventia" description="Detalle, cupo y precio final." crumbs={[{ href: "/explorar", label: "Explorar" }, { label: "Evento" }]}>
   <EventIsland client:load slug={slug} />
 </AppLayout>

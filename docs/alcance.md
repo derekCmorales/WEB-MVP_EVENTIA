@@ -9,6 +9,9 @@
 - Fila con posición aleatoria antes de abrir y orden de llegada después.
 - Puerta en línea, manifiesto firmado, cola local y conciliación.
 - Semilla, Compose de Postgres y Redis, pruebas unitarias, de integración y de extremo a extremo, y el flujo de GitHub Actions.
+- Rol ADMIN. El panel aprueba o suspende organizadores, suspende cuentas, retira eventos y muestra ingresos, embudo, check-in y la bitácora. Quien no es admin recibe 403.
+- Métricas del organizador: ventas por día, boletos por tipo, entradas en vivo y lista de espera.
+- La portada muestra el contenido sin esperar al scroll ni a JavaScript. La animación solo se suma si el sistema permite movimiento.
 
 El modelo admite zona con asientos. La API los aparta de uno en uno y la prueba de carrera cubre ese caso. La pantalla todavía no dibuja un mapa de asientos: publicar un evento desde la web crea aforo general.
 

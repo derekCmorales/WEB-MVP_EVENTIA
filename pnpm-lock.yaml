@@ -140,6 +140,9 @@ importers:
       '@eventia/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
+      '@eventia/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@fontsource/inter':
         specifier: ^5
         version: 5.3.0
@@ -201,6 +204,18 @@ importers:
         version: 5.9.3
 
   packages/tokens: {}
+
+  packages/ui:
+    devDependencies:
+      '@types/react':
+        specifier: ^19.1.13
+        version: 19.3.0
+      react:
+        specifier: ^19.1.1
+        version: 19.3.1
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
 
 packages:
 

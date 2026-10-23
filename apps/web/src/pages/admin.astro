@@ -1,0 +1,7 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+import AdminIsland from "../components/app/AdminIsland.tsx";
+---
+<AppLayout title="Administración · Eventia" description="Personas, organizadores y la salud de la plataforma." crumbs={[{ label: "Administración" }]}>
+  <AdminIsland client:load />
+</AppLayout>

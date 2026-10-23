@@ -5,6 +5,6 @@ import CheckoutIsland from "../../components/app/CheckoutIsland.tsx";
 const { holdId } = Astro.params;
 if (!holdId) return Astro.redirect("/explorar");
 ---
-<AppLayout title="Pago · Eventia" description="Confirma el apartado y paga.">
+<AppLayout title="Pago · Eventia" description="Confirma el apartado y paga." crumbs={[{ href: "/explorar", label: "Explorar" }, { label: "Pago" }]}>
   <CheckoutIsland client:load holdId={holdId} />
 </AppLayout>

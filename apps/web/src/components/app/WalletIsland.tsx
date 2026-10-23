@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { toast } from '@eventia/ui'
 import { api, when } from '../../lib/api'
 
 type Ticket = { id: string; serial: string; status: string; eventTitle: string; city: string; venueName: string; startsAt: string }
@@ -25,8 +26,16 @@ export default function WalletIsland() {
   useEffect(() => { void load() }, [])
 
   async function accept(id: string) {
-    await api(`/v1/transfers/${id}/accept`, { method: 'POST' })
-    await load()
+    const previous = incoming
+    setIncoming((rows) => rows.filter((row) => row.id !== id))
+    try {
+      await api(`/v1/transfers/${id}/accept`, { method: 'POST' })
+      toast('Pase aceptado')
+      await load()
+    } catch (reason) {
+      setIncoming(previous)
+      toast(reason instanceof Error ? reason.message : 'No se pudo aceptar')
+    }
   }
 
   return (

@@ -23,6 +23,10 @@ test('compra un pase y la puerta lo valida', async ({ page, browser }) => {
   await page.waitForURL('**/explorar')
   await expect(page.getByRole('link', { name: /Taller de fotografía nocturna/ })).toBeVisible()
   await page.screenshot({ path: `${shots}/02-explorar.png`, fullPage: true })
+  await page.getByRole('button', { name: 'Buscar' }).click()
+  await expect(page.getByRole('dialog', { name: 'Buscar eventos' })).toBeVisible()
+  await page.screenshot({ path: `${shots}/02-buscar.png` })
+  await page.keyboard.press('Escape')
 
   await page.getByRole('link', { name: /Taller de fotografía nocturna/ }).click()
   await expect(page.getByRole('heading', { name: 'Taller de fotografía nocturna' })).toBeVisible()

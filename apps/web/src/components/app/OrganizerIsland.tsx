@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Bars, toast } from '@eventia/ui'
 import { api, money, when } from '../../lib/api'
 
 type Overview = {
@@ -25,6 +26,16 @@ type Attendee = {
 }
 
 type Audit = { id: string; action: string; targetType: string; at: string }
+type Insights = {
+  salesCents: number
+  checkInRate: number
+  utilization: number
+  series: { day: string; cents: number }[]
+  ticketTypes: { name: string; issued: number; used: number }[]
+  live: { at: string; holderName: string; eventTitle: string }[]
+  waitlist: { title: string; count: number }[]
+  funnel: { holds: number; orders: number; paid: number; checkins: number }
+}
 
 const empty = {
   title: '',
@@ -47,6 +58,7 @@ export default function OrganizerIsland() {
   const [selected, setSelected] = useState('')
   const [attendees, setAttendees] = useState<Attendee[]>([])
   const [audit, setAudit] = useState<Audit[]>([])
+  const [insights, setInsights] = useState<Insights | null>(null)
   const [form, setForm] = useState(empty)
   const [staffEmail, setStaffEmail] = useState('')
   const [reason, setReason] = useState('El asistente no podrá venir')
@@ -54,12 +66,14 @@ export default function OrganizerIsland() {
   const [error, setError] = useState('')
 
   async function load() {
-    const [overview, trail] = await Promise.all([
+    const [overview, trail, picture] = await Promise.all([
       api<{ events: Overview[] }>('/v1/organizer/overview'),
       api<{ data: Audit[] }>('/v1/organizer/audit'),
+      api<Insights>('/v1/organizer/insights'),
     ])
     setEvents(overview.events)
     setAudit(trail.data)
+    setInsights(picture)
     setSelected((current) => current || overview.events[0]?.id || '')
   }
 
@@ -116,6 +130,7 @@ export default function OrganizerIsland() {
     try {
       await api(`/v1/organizer/events/${selected}/staff`, { method: 'POST', body: JSON.stringify({ email: staffEmail }) })
       setNote(`Puerta habilitada para ${staffEmail}`)
+      toast(`Puerta habilitada para ${staffEmail}`)
       setStaffEmail('')
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'No se pudo invitar')
@@ -143,6 +158,37 @@ export default function OrganizerIsland() {
         <div className="eyebrow">Organizador</div>
         <h1 style={{ fontSize: 52, marginTop: 8 }}>Tu cartelera.</h1>
       </div>
+      {insights && (
+        <div className="stack">
+          <div className="grid-cards">
+            <div className="card panel"><div className="mono">Ventas 14 días</div><div className="price">{money(insights.salesCents)}</div></div>
+            <div className="card panel"><div className="mono">Check-in</div><div className="price">{insights.checkInRate}%</div></div>
+            <div className="card panel"><div className="mono">Cupo usado</div><div className="price">{insights.utilization}%</div></div>
+            <div className="card panel"><div className="mono">Embudo</div><p className="help">{insights.funnel.holds} apartados · {insights.funnel.paid} pagos · {insights.funnel.checkins} entradas</p></div>
+          </div>
+          <div className="card panel stack">
+            <h2 style={{ fontSize: 28 }}>Ventas por día</h2>
+            <Bars series={insights.series} />
+          </div>
+          <div className="split">
+            <div className="card panel stack">
+              <h2 style={{ fontSize: 22 }}>Por tipo de boleto</h2>
+              {insights.ticketTypes.map((type) => (
+                <div key={type.name} className="between"><span>{type.name}</span><span className="mono">{type.issued} vigentes · {type.used} dentro</span></div>
+              ))}
+              {insights.ticketTypes.length === 0 && <p className="help">Todavía no hay boletos.</p>}
+            </div>
+            <div className="card panel stack">
+              <h2 style={{ fontSize: 22 }}>Entradas en vivo</h2>
+              {insights.live.map((row) => <div key={row.at + row.holderName} className="between"><span>{row.holderName}</span><span className="mono">{when(row.at)}</span></div>)}
+              {insights.live.length === 0 && <p className="help">Nadie ha entrado todavía.</p>}
+              <h2 style={{ fontSize: 22 }}>Lista de espera</h2>
+              {insights.waitlist.map((row) => <div key={row.title} className="between"><span>{row.title}</span><span className="mono">{row.count}</span></div>)}
+              {insights.waitlist.length === 0 && <p className="help">La lista está vacía.</p>}
+            </div>
+          </div>
+        </div>
+      )}
       {error && <p className="err">{error} <a href="/entrar">Entrar</a></p>}
       {note && <div className="banner ok">{note}</div>}
       <div className="grid-cards">

@@ -10,6 +10,13 @@ export default defineConfig({
   integrations: [react()],
   vite: {
     plugins: [tailwindcss()],
+    // `astro build` prebundles into the same cache the dev server serves.
+    // A production prebundle sets jsxDEV to undefined and islands never hydrate.
+    optimizeDeps: {
+      esbuildOptions: {
+        define: { 'process.env.NODE_ENV': '"development"' },
+      },
+    },
     server: {
       proxy: {
         '/v1': 'http://127.0.0.1:3001',

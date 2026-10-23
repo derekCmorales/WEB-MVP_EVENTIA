@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Steps, toast } from '@eventia/ui'
 import { api, idempotency, money } from '../../lib/api'
 
 type Hold = {
@@ -54,7 +55,9 @@ export default function CheckoutIsland({ holdId }: { holdId: string }) {
       }
       setError('El pago quedó pendiente. Completa el cobro de Stripe con el client secret de prueba.')
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'No se pudo pagar')
+      const message = reason instanceof Error ? reason.message : 'No se pudo pagar'
+      setError(message)
+      toast(message)
     } finally {
       setBusy(false)
     }
@@ -64,6 +67,7 @@ export default function CheckoutIsland({ holdId }: { holdId: string }) {
   if (paid) {
     return (
       <div className="stack" style={{ maxWidth: 560 }}>
+        <Steps labels={['Apartado', 'Pago', 'Pase']} current={2} />
         <div className="banner ok"><strong>Listo. Tu pase ya está en la cartera.</strong><p>El QR cambia cada medio minuto.</p></div>
         <a className="btn btn-a" href="/boletos">Ver mis boletos</a>
       </div>
@@ -72,9 +76,10 @@ export default function CheckoutIsland({ holdId }: { holdId: string }) {
 
   return (
     <div className="stack" style={{ maxWidth: 560 }}>
+      <Steps labels={['Apartado', 'Pago', 'Pase']} current={1} />
       <div className="eyebrow">Checkout</div>
       <h1 style={{ fontSize: 48 }}>{hold.eventTitle}</h1>
-      <p className="mono timer">El apartado vence en {left}</p>
+      <p className="price timer" aria-live="polite">El apartado vence en {left}</p>
       <div className="card panel stack">
         {hold.items.map((item) => (
           <div key={item.name} className="between">

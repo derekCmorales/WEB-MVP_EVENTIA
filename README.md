@@ -37,6 +37,8 @@ Cuentas de la semilla, contraseña `demo1234` (o `EVENTIA_DEMO_PASSWORD`):
 | luis@eventia.dev | Organizador del cine y la ruta |
 | staff@eventia.dev | Puerta de ambas organizaciones |
 | maya@eventia.dev | Ya tiene el pase del cine |
+| admin@eventia.dev | Administración de la plataforma |
+| nora@eventia.dev | Organizadora pendiente de aprobación |
 
 `docker compose --profile app up --build` levanta también la API y la web. En ese perfil hay que definir las llaves Ed25519 si `NODE_ENV=production`.
 

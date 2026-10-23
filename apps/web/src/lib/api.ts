@@ -22,7 +22,13 @@ export function boot() {
 async function runBoot() {
   try {
     await ensureCsrf()
-    await refresh()
+    const peek = await fetch('/v1/auth/session', { credentials: 'include' })
+    const body = peek.ok ? await peek.json() : { user: null }
+    if (body.user) await refresh()
+    else {
+      state().access = null
+      state().user = null
+    }
   } catch {
     state().access = null
     state().user = null
@@ -131,5 +137,8 @@ function paintAccount() {
   document.querySelectorAll<HTMLAnchorElement>('[data-account]').forEach((link) => {
     link.textContent = user ? 'Mis boletos' : 'Entrar'
     link.href = user ? '/boletos' : '/entrar'
+  })
+  document.querySelectorAll<HTMLElement>('[data-admin]').forEach((link) => {
+    link.hidden = user?.role !== 'ADMIN'
   })
 }

@@ -49,7 +49,20 @@ export default function TicketIsland({ ticketId }: { ticketId: string }) {
         <h1 style={{ fontSize: 48 }}>{ticket.eventTitle}</h1>
         <p className="mono">{ticket.venueName} · {when(ticket.startsAt)}</p>
         <p className="mono">{ticket.serial}</p>
-        {ticket.status === 'ISSUED' && src && <img className="qr" alt="Código QR del pase" src={src} />}
+        {ticket.status === 'ISSUED' && src && (
+          <div className={`pass-flip ${src ? 'flipped' : ''}`}>
+            <div className="pass-flip-inner">
+              <div className="pass-face card panel">
+                <div className="mono">{ticket.serial}</div>
+                <strong style={{ fontFamily: 'Inter Tight, sans-serif', fontSize: 28 }}>{ticket.eventTitle}</strong>
+                <p className="help">Gira el pase para el código.</p>
+              </div>
+              <div className="pass-face back">
+                <img className="qr qr-spin" alt="Código QR del pase" src={src} />
+              </div>
+            </div>
+          </div>
+        )}
         {ticket.status !== 'ISSUED' && <div className="banner warn">Este pase está {ticket.status.toLowerCase()}.</div>}
         <p className="help">El código cambia solo. Una captura deja de servir en menos de un minuto.</p>
         <textarea readOnly value={token} aria-label="Contenido del pase" style={{ width: '100%', minHeight: 72 }} />

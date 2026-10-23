@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { toast } from '@eventia/ui'
 import { api, currentUser, idempotency, money, when } from '../../lib/api'
 
 type Detail = {
@@ -17,8 +18,8 @@ type Detail = {
     endsAt: string
     salesOpenAt: string
     queueEnabled: boolean
-    zones: { id: string; name: string; capacity: number; available: number; sold: number }[]
-    ticketTypes: { id: string; name: string; priceCents: number; feeCents: number; currency: string; perOrderLimit: number; available: number }[]
+    zones: { id: string; name: string; kind: string; capacity: number; available: number; sold: number }[]
+    ticketTypes: { id: string; name: string; zoneId: string; priceCents: number; feeCents: number; currency: string; perOrderLimit: number; available: number }[]
   }[]
 }
 
@@ -35,6 +36,8 @@ export default function EventIsland({ slug }: { slug: string }) {
   const [busy, setBusy] = useState(false)
   const [admission, setAdmission] = useState<string | null>(null)
   const [queueNote, setQueueNote] = useState('')
+  const [zoneId, setZoneId] = useState('')
+  const [typeId, setTypeId] = useState('')
 
   useEffect(() => {
     api<Detail>(`/v1/events/${slug}`).then(setEvent).catch((reason: Error) => setError(reason.message))
@@ -42,8 +45,8 @@ export default function EventIsland({ slug }: { slug: string }) {
 
   if (!event) return <p className="help">{error || 'Cargando el evento…'}</p>
   const session = event.sessions[0]
-  const zone = session?.zones[0]
-  const type = session?.ticketTypes[0]
+  const zone = session?.zones.find((item) => item.id === zoneId) ?? session?.zones[0]
+  const type = session?.ticketTypes.find((item) => item.id === typeId) ?? session?.ticketTypes.find((item) => item.zoneId === zone?.id) ?? session?.ticketTypes[0]
   if (!session || !type || !zone) return <p className="err">Este evento todavía no tiene boletos.</p>
   const finalCents = type.priceCents + type.feeCents
   const salesOpen = new Date(session.salesOpenAt) <= new Date()
@@ -65,7 +68,9 @@ export default function EventIsland({ slug }: { slug: string }) {
       })
       window.location.href = `/checkout/${hold.id}`
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'No se pudo apartar')
+      const message = reason instanceof Error ? reason.message : 'No se pudo apartar'
+      setError(message)
+      toast(message)
       setBusy(false)
     }
   }
@@ -110,6 +115,22 @@ export default function EventIsland({ slug }: { slug: string }) {
         <p className="help">{policies[event.refundPolicy]}</p>
       </div>
       <aside className="card panel stack">
+        <div className="stack">
+          {session.zones.map((item) => {
+            const taken = item.capacity - item.available
+            return (
+              <button key={item.id} type="button" className={`ui-zone ${item.id === zone.id ? 'on' : ''}`} onClick={() => { setZoneId(item.id); const next = session.ticketTypes.find((ticket) => ticket.zoneId === item.id); if (next) setTypeId(next.id) }}>
+                <div className="between"><strong>{item.name}</strong><span className="mono">{item.kind === 'SEATED' ? 'Asientos' : 'General'}</span></div>
+                <div className="ui-dots" aria-hidden="true">
+                  {Array.from({ length: Math.min(item.capacity, 36) }, (_, index) => (
+                    <i key={index} className={index < taken ? 'on' : 'left'} />
+                  ))}
+                </div>
+                <span className="mono">Quedan {item.available}</span>
+              </button>
+            )
+          })}
+        </div>
         <div className="mono">{type.name} · {zone.name}</div>
         <div className="price">{money(finalCents, type.currency)}</div>
         <p className="help">Precio final. Incluye {money(type.feeCents, type.currency)} de cargo de servicio.</p>
