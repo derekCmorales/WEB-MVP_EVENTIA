@@ -1,6 +1,7 @@
 // @ts-nocheck
 
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(!RM) document.documentElement.classList.add('motion');
 document.querySelectorAll('.kin').forEach(h=>{const walk=n=>{[...n.childNodes].forEach(c=>{if(c.nodeType===3){const f=document.createDocumentFragment();c.textContent.split(/(\s+)/).forEach((w,i)=>{if(/^\s+$/.test(w)||!w){f.append(w);return}const s=document.createElement('span');s.className='w';s.textContent=w;f.append(s)});c.replaceWith(f)}else if(c.nodeType===1&&c.tagName!=='BR')walk(c)})};walk(h);h.querySelectorAll('.w').forEach((w,i)=>w.style.setProperty('--i',i))});
 document.querySelectorAll('section').forEach(s=>{const items=s.querySelectorAll('.rv');items.forEach((el,i)=>el.style.setProperty('--d',(i%6)*0.08+'s'))});
 document.querySelectorAll('section .card, section .flow, .dash, .grow').forEach(e=>{if(!e.classList.contains('rv'))e.classList.add('obs')});
