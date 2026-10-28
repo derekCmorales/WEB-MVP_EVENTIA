@@ -1,0 +1,40 @@
+# API NestJS + Prisma. Plataforma linux/amd64: el VPS es x86, no el chip del Mac.
+#
+# node:22-bookworm-slim no trae libssl: Prisma no carga su motor sin openssl.
+# apt-get corre en la máquina que construye (el Mac), no en el VPS.
+#
+# Openship puede inyectar NODE_ENV=production en el build; pnpm entonces omite
+# devDependencies (nest, prisma, tsx). Por eso `unset NODE_ENV` al instalar.
+FROM node:22-bookworm-slim AS build
+RUN apt-get update && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/* \
+  && corepack enable && corepack prepare pnpm@10.33.4 --activate
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY packages/qr/package.json packages/qr/package.json
+COPY packages/schemas/package.json packages/schemas/package.json
+COPY packages/tokens/package.json packages/tokens/package.json
+COPY packages/ui/package.json packages/ui/package.json
+RUN unset NODE_ENV && CI=true pnpm install --frozen-lockfile --filter api...
+COPY packages packages
+COPY apps/api apps/api
+RUN pnpm --filter @eventia/qr build && pnpm --filter @eventia/schemas build && pnpm --filter api build
+
+FROM node:22-bookworm-slim AS runner
+RUN apt-get update && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/* \
+  && useradd --create-home --uid 10001 eventia
+WORKDIR /app
+COPY --from=build /app /app
+COPY deploy/entrypoint-api.sh /app/deploy/entrypoint-api.sh
+COPY deploy/db-is-empty.cjs /app/deploy/db-is-empty.cjs
+RUN chmod +x /app/deploy/entrypoint-api.sh
+ENV NODE_ENV=production
+ENV NODE_OPTIONS=--max-old-space-size=384
+USER eventia
+EXPOSE 3001
+HEALTHCHECK --interval=15s --timeout=10s --start-period=90s --retries=12 \
+  CMD node -e "fetch('http://127.0.0.1:3001/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+ENTRYPOINT ["/app/deploy/entrypoint-api.sh"]

@@ -7,3 +7,10 @@ coverage
 playwright-report
 test-results
 apps/api/data
+**/.env
+**/.env.*
+!**/.env.example
+.github
+docs
+load
+openship.json

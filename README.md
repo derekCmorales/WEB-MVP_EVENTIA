@@ -63,4 +63,5 @@ La landing que ya estaba aprobada sigue siendo la base visual: neutros cálidos,
 - [Arquitectura](docs/arquitectura.md)
 - [Controles de seguridad](docs/fase-3-seguridad.md)
 - [Qué quedó y qué se dejó](docs/alcance.md)
+- [Despliegue con Openship](DEPLOY.md)
 - OpenAPI en `/docs` cuando la API no está en producción

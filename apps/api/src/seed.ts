@@ -6,7 +6,10 @@ const prisma = new PrismaClient()
 const ARGON: argon2.Options = { type: argon2.argon2id, memoryCost: 65536, timeCost: 3, parallelism: 1 }
 
 async function main() {
-  if (process.env.NODE_ENV === 'production') throw new Error('La semilla no se ejecuta en producción')
+  if (process.env.NODE_ENV === 'production') {
+    if (process.env.SEED_ON_BOOT !== 'true') throw new Error('La semilla no se ejecuta en producción')
+    if (!process.env.EVENTIA_DEMO_PASSWORD) throw new Error('Falta EVENTIA_DEMO_PASSWORD para la semilla en producción')
+  }
   const password = process.env.EVENTIA_DEMO_PASSWORD || 'demo1234'
   const passwordHash = await argon2.hash(password, ARGON)
 

@@ -1,0 +1,135 @@
+# Producción (Openship). No es el loop local: el docker-compose.yml de la raíz
+# sigue siendo Postgres + Redis para desarrollo.
+#
+# Secretos: el panel de Openship (Environment) los inyecta.
+# Sin depends_on: Openship se queda esperando si postgres aún no arranca.
+# La API reintenta Postgres sola y sigue en pie sin Redis.
+#
+# Puertos del host distintos a los de misupertostada (3000, 3001, 5432) por si
+# comparten VPS. Postgres y Redis no se publican.
+name: eventia
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    platform: linux/amd64
+    restart: unless-stopped
+    hostname: postgres
+    environment:
+      POSTGRES_USER: eventia
+      POSTGRES_DB: eventia
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - effective_cache_size=384MB
+      - -c
+      - max_connections=40
+    mem_limit: 512m
+    cpus: "0.75"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.75"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eventia -d eventia"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    platform: linux/amd64
+    restart: unless-stopped
+    hostname: redis
+    command: ["redis-server", "--maxmemory", "64mb", "--maxmemory-policy", "noeviction", "--save", ""]
+    mem_limit: 128m
+    cpus: "0.25"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    restart: unless-stopped
+    hostname: api
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      POSTGRES_USER: eventia
+      POSTGRES_DB: eventia
+      POSTGRES_HOST: postgres
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "3101:3001"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 90s
+    mem_limit: 512m
+    cpus: "1.0"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+
+  web:
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: "0.0.0.0"
+      PORT: "4321"
+      API_PROXY: http://api:3001
+    ports:
+      - "4321:4321"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4321/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
+    mem_limit: 384m
+    cpus: "0.5"
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+          cpus: "0.5"
+
+volumes:
+  pgdata:

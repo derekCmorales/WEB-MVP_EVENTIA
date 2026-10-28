@@ -1,0 +1,36 @@
+# Astro (adaptador node standalone). `astro dev` local no usa esta imagen.
+#
+# El servidor de Astro reenvía /v1 a la API por la red interna (API_PROXY,
+# apps/web/src/middleware.ts). Así web y API comparten origen y cookies.
+#
+# Openship puede inyectar NODE_ENV=production en el build; pnpm entonces omite
+# devDependencies. Por eso `unset NODE_ENV` al instalar.
+FROM node:22-bookworm-slim AS build
+RUN corepack enable && corepack prepare pnpm@10.33.4 --activate
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY packages/qr/package.json packages/qr/package.json
+COPY packages/schemas/package.json packages/schemas/package.json
+COPY packages/tokens/package.json packages/tokens/package.json
+COPY packages/ui/package.json packages/ui/package.json
+RUN unset NODE_ENV && CI=true pnpm install --frozen-lockfile --filter web...
+COPY packages packages
+COPY apps/web apps/web
+RUN pnpm --filter @eventia/qr build && pnpm --filter web build
+
+FROM node:22-bookworm-slim AS runner
+RUN useradd --create-home --uid 10001 eventia
+WORKDIR /app
+COPY --from=build /app /app
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=4321
+ENV API_PROXY=http://api:3001
+ENV NODE_OPTIONS=--max-old-space-size=256
+USER eventia
+EXPOSE 4321
+HEALTHCHECK --interval=15s --timeout=10s --start-period=60s --retries=12 \
+  CMD node -e "fetch('http://127.0.0.1:4321/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["node", "apps/web/dist/server/entry.mjs"]
